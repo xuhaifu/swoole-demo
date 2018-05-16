@@ -2,8 +2,73 @@
 
 
 
+/*******************调度支持 Stream 模式************************/
+$serv = new swoole_server("127.0.0.1", 9501);
+
+$serv->set(array(
+    'dispatch_mode' => 7,
+    'worker_num' => 2,
+));
+
+$serv->on('receive', function (swoole_server $serv, $fd, $threadId, $data)
+{
+    var_dump($data);
+    echo "#{$serv->worker_id}>> received length=" . strlen($data) . "\n";
+});
+
+$serv->start();
+
+exit;
+/***********进程池模块的使用--任务投递(TCP端口消息队列)************************/
+
+$pool = new Swoole\Process\Pool(2, SWOOLE_IPC_SOCKET);
+
+$pool->on("WorkerStart", function ($pool, $workerId) {
+    echo "Worker#{$workerId} is started\n";
+});
+
+$pool->on("Message", function ($pool, $message) {
+    echo "Message: {$message}\n";
+});
+
+$pool->listen('127.0.0.1', 8089);
+
+$pool->start();
 
 
+/*******************进程池模块的使用--任务投递(消息队列)************************/
+$pool = new Swoole\Process\Pool(2, SWOOLE_IPC_MSGQUEUE, 0x7000001);
+
+$pool->on("WorkerStart", function ($pool, $workerId) {
+    echo "Worker#{$workerId} is started\n";
+});
+
+$pool->on("Message", function ($pool, $message) {
+    echo "Message: {$message}\n";
+});
+
+$pool->start();
+
+/*******************进程池模块的使用--信号处理************************/
+$workerNum = 5;
+$pool = new Swoole\Process\Pool($workerNum);
+
+$pool->on("WorkerStart", function ($pool, $workerId) {
+    $running = true;
+    pcntl_signal(SIGTERM, function () use (&$running) {
+        $running = false;
+    });
+    echo "Worker#{$workerId} is started\n";
+    $redis = new Redis();
+    $redis->pconnect('127.0.0.1', 6379);
+    $key = "runoobkey";
+    while ($running) {
+        $msgs = $redis->brpop($key, 2);
+        pcntl_signal_dispatch();
+        if ( $msgs == null) continue;
+        var_dump($msgs);
+    }
+});
 
 /*******************进程池模块的使用--创建进程池************************/
 $workerNum = 5;

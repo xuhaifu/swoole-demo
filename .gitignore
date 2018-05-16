@@ -1,2 +1,3 @@
 /.idea
-
+/swoole-ide-helper
+/redis-async
