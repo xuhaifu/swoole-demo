@@ -30,7 +30,14 @@ $serv->on('connect', function ($serv, $fd){
     echo "Client:Connect.\n";
 });
 $serv->on('receive', function ($serv, $fd, $from_id, $data) {
-    $serv->send($fd, 'Swoole: '.$data);
+    $serv->send($fd, $data);
+    /*$serv->sendfile($fd, 'data/file');    //发送文件内容。文件路径
+    $serv->tick(1000, function() use ($serv, $fd) {
+        echo '服务执行完成后，定时执行';
+    });
+    $serv->after(1000,function(){
+        echo '服务执行完成后只执行一次，就销毁';
+    });*/
     $serv->close($fd);
 });
 $serv->on('close', function ($serv, $fd) {
@@ -38,6 +45,7 @@ $serv->on('close', function ($serv, $fd) {
 });
 
 $serv->start();
+
 
 //var_dump($serv);
 
